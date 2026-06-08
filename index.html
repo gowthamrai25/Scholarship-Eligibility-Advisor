@@ -1,0 +1,1620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scholarship Eligibility Advisor — AI Expert System</title>
+<meta name="description" content="An AI-powered Expert System for determining scholarship eligibility using forward chaining inference, modeled after MYCIN. Built for Unit 5 of Introduction to Artificial Intelligence (24AM4PCIAI).">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;800&family=Source+Sans+3:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════
+   CSS DESIGN SYSTEM — Navy & Gold College Theme
+   ═══════════════════════════════════════════ */
+:root {
+  --navy-900: #0a1628;
+  --navy-800: #0f2040;
+  --navy-700: #162d50;
+  --navy-600: #1e3a5f;
+  --navy-500: #2a4a72;
+  --navy-400: #3d6191;
+  --navy-300: #5a82b4;
+  --gold-500: #d4a843;
+  --gold-400: #e6be5a;
+  --gold-300: #f0d078;
+  --gold-200: #f5e0a0;
+  --accent-green: #2ecc71;
+  --accent-red: #e74c3c;
+  --accent-blue: #3498db;
+  --accent-purple: #9b59b6;
+  --text-primary: #f0f2f5;
+  --text-secondary: #b0bec5;
+  --text-muted: #78909c;
+  --surface-1: rgba(15, 32, 64, 0.7);
+  --surface-2: rgba(22, 45, 80, 0.6);
+  --surface-3: rgba(30, 58, 95, 0.5);
+  --glass: rgba(255, 255, 255, 0.04);
+  --glass-border: rgba(212, 168, 67, 0.15);
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.3), 0 2px 8px rgba(0, 0, 0, 0.2);
+  --shadow-glow: 0 0 30px rgba(212, 168, 67, 0.1);
+  --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Source Sans 3', 'Segoe UI', sans-serif;
+  background: var(--navy-900);
+  color: var(--text-primary);
+  line-height: 1.65;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Animated background */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: -2;
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 10%, rgba(212,168,67,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 50% at 80% 90%, rgba(42,74,114,0.15) 0%, transparent 60%),
+    radial-gradient(ellipse 50% 40% at 50% 50%, rgba(15,32,64,0.8) 0%, transparent 70%);
+}
+body::after {
+  content: '';
+  position: fixed; inset: 0; z-index: -1;
+  background-image:
+    radial-gradient(1px 1px at 10% 20%, rgba(212,168,67,0.3), transparent),
+    radial-gradient(1px 1px at 30% 60%, rgba(212,168,67,0.2), transparent),
+    radial-gradient(1px 1px at 70% 30%, rgba(255,255,255,0.15), transparent),
+    radial-gradient(1px 1px at 90% 80%, rgba(212,168,67,0.25), transparent),
+    radial-gradient(1.5px 1.5px at 50% 10%, rgba(212,168,67,0.2), transparent),
+    radial-gradient(1px 1px at 85% 50%, rgba(255,255,255,0.1), transparent);
+  animation: twinkle 8s ease-in-out infinite alternate;
+}
+@keyframes twinkle {
+  0% { opacity: 0.6; }
+  100% { opacity: 1; }
+}
+
+/* Typography */
+h1, h2, h3, h4 { font-family: 'Playfair Display', Georgia, serif; font-weight: 700; }
+
+/* Layout */
+.container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* ───── HEADER ───── */
+header {
+  padding: 40px 0 30px;
+  text-align: center;
+  position: relative;
+}
+header::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 10%; right: 10%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold-500), transparent);
+}
+.header-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, rgba(212,168,67,0.15), rgba(212,168,67,0.05));
+  border: 1px solid rgba(212,168,67,0.25);
+  border-radius: 50px;
+  padding: 6px 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--gold-400);
+  margin-bottom: 18px;
+}
+.header-badge span { font-size: 1rem; }
+header h1 {
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--gold-300), var(--gold-500), var(--gold-300));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 10px;
+  line-height: 1.2;
+}
+header p {
+  color: var(--text-secondary);
+  font-size: 1.05rem;
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+/* ───── ARCHITECTURE LEGEND ───── */
+.architecture-legend {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 12px;
+  margin: 30px auto 40px;
+  max-width: 1100px;
+  padding: 0 24px;
+}
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  backdrop-filter: blur(8px);
+  transition: var(--transition);
+}
+.legend-item:hover {
+  transform: translateY(-2px);
+  border-color: var(--gold-500);
+  box-shadow: var(--shadow-glow);
+}
+.legend-icon {
+  width: 38px; height: 38px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+.legend-icon.kb { background: linear-gradient(135deg, #2980b9, #3498db); }
+.legend-icon.ie { background: linear-gradient(135deg, #8e44ad, #9b59b6); }
+.legend-icon.wm { background: linear-gradient(135deg, #27ae60, #2ecc71); }
+.legend-icon.ef { background: linear-gradient(135deg, #d35400, #e67e22); }
+.legend-icon.ka { background: linear-gradient(135deg, #c0392b, #e74c3c); }
+.legend-label { font-size: 0.82rem; }
+.legend-label strong { display: block; font-size: 0.9rem; color: var(--text-primary); }
+.legend-label span { color: var(--text-muted); font-size: 0.78rem; }
+
+/* ───── MAIN GRID ───── */
+.main-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+  margin-bottom: 36px;
+}
+
+/* ───── CARDS ───── */
+.card {
+  background: var(--surface-1);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  padding: 28px;
+  backdrop-filter: blur(12px);
+  box-shadow: var(--shadow-card);
+  transition: var(--transition);
+  position: relative;
+  overflow: hidden;
+}
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+.card:hover { border-color: rgba(212,168,67,0.3); }
+.card.input-card::before { background: linear-gradient(90deg, var(--accent-blue), var(--accent-green)); }
+.card.trace-card::before { background: linear-gradient(90deg, var(--accent-purple), #e74c3c); }
+.card.result-card::before { background: linear-gradient(90deg, var(--gold-500), var(--gold-300)); }
+.card.explain-card::before { background: linear-gradient(90deg, #e67e22, #f39c12); }
+.card.knowledge-card::before { background: linear-gradient(90deg, #e74c3c, #c0392b); }
+.card.full-width { grid-column: 1 / -1; }
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 22px;
+}
+.card-header-icon {
+  width: 42px; height: 42px;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.3rem;
+}
+.card-header h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+.card-header .tag {
+  margin-left: auto;
+  font-family: 'Source Sans 3', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 4px 12px;
+  border-radius: 50px;
+  border: 1px solid;
+}
+
+/* ───── FORM STYLES ───── */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-group.full { grid-column: 1 / -1; }
+.form-group label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+.form-group input,
+.form-group select {
+  background: var(--surface-3);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  color: var(--text-primary);
+  font-family: 'Source Sans 3', sans-serif;
+  font-size: 0.95rem;
+  transition: var(--transition);
+  outline: none;
+}
+.form-group input:focus,
+.form-group select:focus {
+  border-color: var(--gold-500);
+  box-shadow: 0 0 0 3px rgba(212,168,67,0.15);
+}
+.form-group input::placeholder { color: var(--text-muted); }
+select option { background: var(--navy-800); color: var(--text-primary); }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 32px;
+  border-radius: var(--radius-sm);
+  font-family: 'Source Sans 3', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  border: none;
+  cursor: pointer;
+  transition: var(--transition);
+  text-transform: uppercase;
+}
+.btn-primary {
+  background: linear-gradient(135deg, var(--gold-500), var(--gold-400));
+  color: var(--navy-900);
+  box-shadow: 0 4px 20px rgba(212,168,67,0.3);
+}
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(212,168,67,0.4);
+}
+.btn-primary:active { transform: translateY(0); }
+.btn-secondary {
+  background: var(--surface-3);
+  color: var(--gold-400);
+  border: 1px solid rgba(212,168,67,0.3);
+}
+.btn-secondary:hover {
+  background: rgba(212,168,67,0.1);
+  border-color: var(--gold-500);
+}
+
+/* ───── INFERENCE TRACE ───── */
+.trace-container { max-height: 520px; overflow-y: auto; padding-right: 8px; }
+.trace-container::-webkit-scrollbar { width: 5px; }
+.trace-container::-webkit-scrollbar-track { background: transparent; }
+.trace-container::-webkit-scrollbar-thumb { background: var(--navy-500); border-radius: 10px; }
+
+.trace-empty {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-muted);
+}
+.trace-empty .icon { font-size: 3rem; margin-bottom: 12px; opacity: 0.4; }
+.trace-empty p { font-size: 0.95rem; }
+
+.rule-trace {
+  background: var(--glass);
+  border: 1px solid rgba(255,255,255,0.05);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  margin-bottom: 10px;
+  opacity: 0;
+  transform: translateX(-20px);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.rule-trace.visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+.rule-trace.fired {
+  border-color: rgba(46, 204, 113, 0.3);
+  background: rgba(46, 204, 113, 0.05);
+}
+.rule-trace.not-fired {
+  border-color: rgba(231, 76, 60, 0.15);
+  background: rgba(231, 76, 60, 0.03);
+}
+.rule-trace-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.rule-status {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 50px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.rule-status.fired { background: rgba(46,204,113,0.15); color: var(--accent-green); }
+.rule-status.not-fired { background: rgba(231,76,60,0.1); color: var(--accent-red); }
+.rule-name { font-weight: 700; font-size: 0.95rem; }
+.rule-conditions { padding-left: 8px; margin-top: 6px; }
+.condition-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  padding: 3px 0;
+}
+.condition-line .cond-icon { font-size: 0.9rem; }
+.condition-line .cond-icon.pass { color: var(--accent-green); }
+.condition-line .cond-icon.fail { color: var(--accent-red); }
+
+/* ───── RESULTS ───── */
+.results-container { min-height: 200px; }
+.results-empty {
+  text-align: center;
+  padding: 50px 20px;
+  color: var(--text-muted);
+}
+.results-empty .icon { font-size: 3rem; margin-bottom: 12px; opacity: 0.4; }
+
+.scholarship-card {
+  background: linear-gradient(135deg, rgba(212,168,67,0.08), rgba(212,168,67,0.02));
+  border: 1px solid rgba(212,168,67,0.2);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  margin-bottom: 14px;
+  cursor: pointer;
+  transition: var(--transition);
+  animation: cardSlideIn 0.5s ease-out backwards;
+}
+.scholarship-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--gold-500);
+  box-shadow: 0 8px 30px rgba(212,168,67,0.15);
+}
+@keyframes cardSlideIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.scholarship-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--gold-300);
+  margin-bottom: 8px;
+}
+.scholarship-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+}
+.scholarship-details .detail {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.scholarship-details .detail strong { color: var(--text-primary); }
+.confidence-bar {
+  width: 100%;
+  height: 6px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 10px;
+  margin-top: 12px;
+  overflow: hidden;
+}
+.confidence-fill {
+  height: 100%;
+  border-radius: 10px;
+  background: linear-gradient(90deg, var(--gold-500), var(--accent-green));
+  transition: width 1s ease-out;
+}
+.click-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 8px;
+  font-style: italic;
+}
+
+.no-scholarship {
+  background: rgba(231,76,60,0.06);
+  border: 1px solid rgba(231,76,60,0.2);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  text-align: center;
+}
+.no-scholarship h3 { color: var(--accent-red); margin-bottom: 8px; }
+.no-scholarship p { color: var(--text-secondary); font-size: 0.92rem; }
+.suggestion-list {
+  list-style: none;
+  margin-top: 14px;
+  text-align: left;
+}
+.suggestion-list li {
+  padding: 6px 0;
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+}
+.suggestion-list li::before { content: '💡 '; }
+
+/* ───── EXPLANATION PANEL ───── */
+.explanation-container { min-height: 180px; }
+.explanation-empty {
+  text-align: center;
+  padding: 50px 20px;
+  color: var(--text-muted);
+}
+.explanation-empty .icon { font-size: 3rem; margin-bottom: 12px; opacity: 0.4; }
+
+.explanation-box {
+  background: rgba(230, 126, 34, 0.06);
+  border: 1px solid rgba(230, 126, 34, 0.2);
+  border-radius: var(--radius-md);
+  padding: 22px;
+  animation: fadeScale 0.3s ease-out;
+}
+@keyframes fadeScale {
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1); }
+}
+.explanation-title {
+  font-family: 'Playfair Display', serif;
+  color: #f39c12;
+  font-size: 1.1rem;
+  margin-bottom: 14px;
+}
+.explanation-chain {
+  background: rgba(0,0,0,0.2);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  line-height: 1.8;
+  margin-bottom: 14px;
+}
+.explanation-chain .keyword { color: var(--gold-400); font-weight: 700; }
+.explanation-chain .value { color: var(--accent-green); }
+.explanation-meta {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  border-top: 1px solid rgba(255,255,255,0.05);
+  padding-top: 12px;
+}
+.explanation-meta strong { color: var(--text-secondary); }
+
+/* ───── WORKING MEMORY ───── */
+.working-memory-panel {
+  background: var(--surface-2);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  padding: 18px;
+  margin-top: 16px;
+}
+.wm-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--accent-green);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.wm-facts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.wm-fact {
+  font-size: 0.82rem;
+  padding: 6px 10px;
+  background: rgba(46,204,113,0.05);
+  border-radius: 6px;
+  color: var(--text-secondary);
+}
+.wm-fact strong { color: var(--accent-green); }
+
+/* ───── KNOWLEDGE ACQUISITION ───── */
+.ka-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.ka-condition {
+  background: var(--surface-3);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+}
+.ka-condition h4 {
+  font-family: 'Source Sans 3', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+.ka-condition .form-group { margin-bottom: 10px; }
+.ka-then {
+  grid-column: 1 / -1;
+  background: rgba(212,168,67,0.05);
+  border: 1px solid rgba(212,168,67,0.15);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+}
+.rule-list-container {
+  margin-top: 20px;
+  max-height: 280px;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+.rule-list-container::-webkit-scrollbar { width: 4px; }
+.rule-list-container::-webkit-scrollbar-track { background: transparent; }
+.rule-list-container::-webkit-scrollbar-thumb { background: var(--navy-500); border-radius: 10px; }
+
+.kb-rule {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--glass);
+  border: 1px solid rgba(255,255,255,0.04);
+  border-radius: var(--radius-sm);
+  margin-bottom: 6px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  transition: var(--transition);
+}
+.kb-rule:hover { border-color: rgba(212,168,67,0.2); }
+.kb-rule .rule-num {
+  background: var(--navy-600);
+  color: var(--gold-400);
+  font-weight: 700;
+  font-size: 0.72rem;
+  padding: 2px 8px;
+  border-radius: 50px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.kb-rule .rule-text { flex: 1; line-height: 1.5; }
+.kb-rule .rule-text .kw { color: var(--gold-400); font-weight: 600; }
+.kb-rule .delete-rule {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 1rem;
+  opacity: 0;
+  transition: var(--transition);
+  padding: 0 4px;
+}
+.kb-rule:hover .delete-rule { opacity: 1; }
+.kb-rule .delete-rule:hover { color: var(--accent-red); }
+.kb-rule.user-added { border-color: rgba(46,204,113,0.2); }
+.kb-rule.user-added .rule-num { background: rgba(46,204,113,0.15); color: var(--accent-green); }
+
+/* ───── FOOTER ───── */
+footer {
+  margin-top: 20px;
+  padding: 36px 0;
+  border-top: 1px solid rgba(212,168,67,0.1);
+  text-align: center;
+}
+.footer-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 24px;
+  max-width: 1000px;
+  margin: 0 auto 24px;
+  text-align: left;
+}
+.footer-col h4 {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: var(--gold-400);
+  margin-bottom: 10px;
+  font-family: 'Source Sans 3', sans-serif;
+  font-weight: 700;
+}
+.footer-col p, .footer-col li {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  line-height: 1.7;
+}
+.footer-col ul { list-style: none; }
+.footer-col ul li::before { content: '▸ '; color: var(--gold-500); }
+.footer-bottom {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+
+/* ───── RESPONSIVE ───── */
+@media (max-width: 900px) {
+  .main-grid { grid-template-columns: 1fr; }
+  .form-grid { grid-template-columns: 1fr; }
+  .ka-form-grid { grid-template-columns: 1fr; }
+  .wm-facts { grid-template-columns: 1fr; }
+}
+@media (max-width: 600px) {
+  .container { padding: 0 14px; }
+  .card { padding: 20px; }
+  header h1 { font-size: 1.7rem; }
+  .architecture-legend { grid-template-columns: 1fr 1fr; }
+}
+
+/* ───── LOADING PULSE ───── */
+.pulse {
+  display: inline-block;
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--gold-500);
+  animation: pulse 1.2s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 0.3; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+/* Summary stats row */
+.stats-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.stat-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--glass);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 50px;
+  padding: 8px 16px;
+  font-size: 0.85rem;
+}
+.stat-chip .stat-value {
+  font-weight: 700;
+  color: var(--gold-400);
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════ HEADER ══════════════════ -->
+<header>
+  <div class="container">
+    <div class="header-badge"><span>🎓</span> AI Expert System — Unit 5 Project</div>
+    <h1>Scholarship Eligibility Advisor</h1>
+    <p>An intelligent rule-based expert system using <strong>Forward Chaining</strong> inference, modeled after MYCIN, to determine scholarship eligibility for students.</p>
+  </div>
+</header>
+
+<!-- ══════════════════ ARCHITECTURE LEGEND ══════════════════ -->
+<div class="container">
+  <div class="architecture-legend">
+    <div class="legend-item">
+      <div class="legend-icon kb">📚</div>
+      <div class="legend-label"><strong>Knowledge Base</strong><span>IF-THEN rules for eligibility</span></div>
+    </div>
+    <div class="legend-item">
+      <div class="legend-icon ie">⚙️</div>
+      <div class="legend-label"><strong>Inference Engine</strong><span>Forward chaining rule evaluation</span></div>
+    </div>
+    <div class="legend-item">
+      <div class="legend-icon wm">🧠</div>
+      <div class="legend-label"><strong>Working Memory</strong><span>Session facts from user input</span></div>
+    </div>
+    <div class="legend-item">
+      <div class="legend-icon ef">💬</div>
+      <div class="legend-label"><strong>Explanation Facility</strong><span>WHY justification (MYCIN-style)</span></div>
+    </div>
+    <div class="legend-item">
+      <div class="legend-icon ka">➕</div>
+      <div class="legend-label"><strong>Knowledge Acquisition</strong><span>Dynamic rule addition module</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ MAIN CONTENT ══════════════════ -->
+<div class="container">
+  <div class="main-grid">
+
+    <!-- ───── SECTION 1: INPUT FORM ───── -->
+    <div class="card input-card">
+      <div class="card-header">
+        <div class="card-header-icon" style="background:linear-gradient(135deg,#2980b9,#3498db)">📝</div>
+        <h2>Student Input</h2>
+        <span class="tag" style="color:var(--accent-blue);border-color:rgba(52,152,219,0.3)">Working Memory</span>
+      </div>
+
+      <form id="studentForm" autocomplete="off">
+        <div class="form-grid">
+          <div class="form-group full">
+            <label for="studentName">Student Name</label>
+            <input type="text" id="studentName" placeholder="e.g. Gowtham R" required>
+          </div>
+          <div class="form-group">
+            <label for="income">Annual Family Income (₹)</label>
+            <input type="number" id="income" placeholder="e.g. 250000" min="0" required>
+          </div>
+          <div class="form-group">
+            <label for="marks">12th / Last Sem Marks (%)</label>
+            <input type="number" id="marks" placeholder="e.g. 88" min="0" max="100" required>
+          </div>
+          <div class="form-group">
+            <label for="attendance">Attendance (%)</label>
+            <input type="number" id="attendance" placeholder="e.g. 90" min="0" max="100" required>
+          </div>
+          <div class="form-group">
+            <label for="category">Category</label>
+            <select id="category">
+              <option value="General">General</option>
+              <option value="OBC">OBC</option>
+              <option value="SC">SC</option>
+              <option value="ST">ST</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="gender">Gender</label>
+            <select id="gender">
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="sports">Sports Achievement</label>
+            <select id="sports">
+              <option value="No">No</option>
+              <option value="Yes">Yes</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="disability">Disability</label>
+            <select id="disability">
+              <option value="No">No</option>
+              <option value="Yes">Yes</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="firstGrad">First Graduate in Family</label>
+            <select id="firstGrad">
+              <option value="No">No</option>
+              <option value="Yes">Yes</option>
+            </select>
+          </div>
+          <div class="form-group" style="justify-content:flex-end">
+            <button type="submit" class="btn btn-primary" id="submitBtn">⚡ Check Eligibility</button>
+          </div>
+        </div>
+      </form>
+
+      <!-- Working Memory Display -->
+      <div class="working-memory-panel" id="workingMemory" style="display:none">
+        <div class="wm-title">🧠 Working Memory — Active Facts</div>
+        <div class="wm-facts" id="wmFacts"></div>
+      </div>
+    </div>
+
+    <!-- ───── SECTION 2: INFERENCE ENGINE TRACE ───── -->
+    <div class="card trace-card">
+      <div class="card-header">
+        <div class="card-header-icon" style="background:linear-gradient(135deg,#8e44ad,#9b59b6)">⚙️</div>
+        <h2>Inference Engine Trace</h2>
+        <span class="tag" style="color:var(--accent-purple);border-color:rgba(155,89,182,0.3)">Forward Chaining</span>
+      </div>
+      <div id="traceStats" class="stats-row" style="display:none"></div>
+      <div class="trace-container" id="traceContainer">
+        <div class="trace-empty">
+          <div class="icon">⚙️</div>
+          <p>Submit student data to watch the<br>inference engine fire rules in real-time.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ───── SECTION 3: RESULTS ───── -->
+    <div class="card result-card">
+      <div class="card-header">
+        <div class="card-header-icon" style="background:linear-gradient(135deg,var(--gold-500),var(--gold-300))">🏆</div>
+        <h2>Scholarship Results</h2>
+        <span class="tag" style="color:var(--gold-400);border-color:rgba(212,168,67,0.3)">Heuristic Scoring</span>
+      </div>
+      <div class="results-container" id="resultsContainer">
+        <div class="results-empty">
+          <div class="icon">🏆</div>
+          <p>Eligible scholarships will appear here<br>with confidence scores and benefits.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ───── SECTION 4: EXPLANATION FACILITY ───── -->
+    <div class="card explain-card">
+      <div class="card-header">
+        <div class="card-header-icon" style="background:linear-gradient(135deg,#d35400,#e67e22)">💬</div>
+        <h2>Explanation Facility</h2>
+        <span class="tag" style="color:#e67e22;border-color:rgba(230,126,34,0.3)">MYCIN-Style WHY</span>
+      </div>
+      <div class="explanation-container" id="explanationContainer">
+        <div class="explanation-empty">
+          <div class="icon">💬</div>
+          <p>Click on any scholarship result to see<br>a MYCIN-style "WHY" explanation.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ───── SECTION 5: KNOWLEDGE ACQUISITION ───── -->
+    <div class="card knowledge-card full-width">
+      <div class="card-header">
+        <div class="card-header-icon" style="background:linear-gradient(135deg,#e74c3c,#c0392b)">➕</div>
+        <h2>Knowledge Acquisition Module</h2>
+        <span class="tag" style="color:var(--accent-red);border-color:rgba(231,76,60,0.3)">Meta-Knowledge</span>
+      </div>
+
+      <div class="ka-form-grid">
+        <div class="ka-condition">
+          <h4>Condition 1 (Required)</h4>
+          <div class="form-group">
+            <label for="ka_field1">Field</label>
+            <select id="ka_field1">
+              <option value="income">Income</option>
+              <option value="marks">Marks</option>
+              <option value="attendance">Attendance</option>
+              <option value="category">Category</option>
+              <option value="gender">Gender</option>
+              <option value="sports_achievement">Sports Achievement</option>
+              <option value="disability">Disability</option>
+              <option value="first_graduate">First Graduate</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="ka_op1">Operator</label>
+            <select id="ka_op1">
+              <option value="<">&lt; (Less than)</option>
+              <option value="<=">≤ (Less or equal)</option>
+              <option value=">">﹥(Greater than)</option>
+              <option value=">=">≥ (Greater or equal)</option>
+              <option value="=">= (Equals)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="ka_val1">Value</label>
+            <input type="text" id="ka_val1" placeholder="e.g. 80 or SC/ST">
+          </div>
+        </div>
+
+        <div class="ka-condition">
+          <h4>Condition 2 (Optional)</h4>
+          <div class="form-group">
+            <label for="ka_field2">Field</label>
+            <select id="ka_field2">
+              <option value="">— None —</option>
+              <option value="income">Income</option>
+              <option value="marks">Marks</option>
+              <option value="attendance">Attendance</option>
+              <option value="category">Category</option>
+              <option value="gender">Gender</option>
+              <option value="sports_achievement">Sports Achievement</option>
+              <option value="disability">Disability</option>
+              <option value="first_graduate">First Graduate</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="ka_op2">Operator</label>
+            <select id="ka_op2">
+              <option value="<">&lt; (Less than)</option>
+              <option value="<=">≤ (Less or equal)</option>
+              <option value=">">﹥(Greater than)</option>
+              <option value=">=">≥ (Greater or equal)</option>
+              <option value="=">= (Equals)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="ka_val2">Value</label>
+            <input type="text" id="ka_val2" placeholder="e.g. 250000 or Female">
+          </div>
+        </div>
+
+        <div class="ka-then">
+          <div class="form-grid" style="align-items:end">
+            <div class="form-group">
+              <label for="ka_scholarship">THEN → Eligible for Scholarship</label>
+              <input type="text" id="ka_scholarship" placeholder="e.g. Dean's List Award">
+            </div>
+            <div class="form-group">
+              <label for="ka_amount">Benefit Amount (₹/year)</label>
+              <input type="number" id="ka_amount" placeholder="e.g. 15000" min="0">
+            </div>
+          </div>
+          <div style="margin-top:14px;display:flex;gap:12px;align-items:center">
+            <button type="button" class="btn btn-secondary" id="addRuleBtn">➕ Add Rule to Knowledge Base</button>
+            <span id="addRuleMsg" style="font-size:0.85rem;color:var(--accent-green);opacity:0;transition:var(--transition)"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Knowledge Base Rules List -->
+      <div style="margin-top:24px">
+        <h3 style="font-size:1rem;margin-bottom:14px;display:flex;align-items:center;gap:10px">
+          📚 Live Knowledge Base
+          <span id="ruleCount" style="font-family:'Source Sans 3',sans-serif;font-size:0.75rem;background:var(--navy-600);padding:3px 12px;border-radius:50px;color:var(--gold-400);font-weight:600"></span>
+        </h3>
+        <div class="rule-list-container" id="ruleListContainer"></div>
+      </div>
+    </div>
+
+  </div><!-- /main-grid -->
+</div><!-- /container -->
+
+<!-- ══════════════════ FOOTER ══════════════════ -->
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-col">
+        <h4>Project Information</h4>
+        <p><strong>Subject:</strong> Introduction to Artificial Intelligence<br>
+        <strong>Code:</strong> 24AM4PCIAI<br>
+        <strong>Unit:</strong> Unit 5 — Expert Systems</p>
+      </div>
+      <div class="footer-col">
+        <h4>Concepts Demonstrated</h4>
+        <ul>
+          <li>Architecture of Expert Systems</li>
+          <li>Knowledge Acquisition &amp; Meta-knowledge</li>
+          <li>Inference Engine (Forward Chaining)</li>
+          <li>Heuristics &amp; Confidence Scoring</li>
+          <li>Explanation Facility</li>
+        </ul>
+      </div>
+      <div class="footer-col">
+        <h4>Inspired By</h4>
+        <p><strong>MYCIN</strong> — Medical diagnosis expert system<br>
+        <strong>DART</strong> — Military logistics planner<br>
+        <strong>XCON</strong> — Computer configuration system</p>
+        <p style="margin-top:10px;font-size:0.8rem;opacity:0.6">Built for academic demonstration purposes.</p>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      &copy; 2026 Scholarship Eligibility Advisor — AI Expert System | Unit 5 Project Demo
+    </div>
+  </div>
+</footer>
+
+<!-- ══════════════════════════════════════════════
+     JAVASCRIPT — Expert System Core Engine
+     ══════════════════════════════════════════════ -->
+<script>
+(function() {
+  'use strict';
+
+  // ═══════════════════════════════════
+  //  KNOWLEDGE BASE — IF-THEN Rules
+  // ═══════════════════════════════════
+
+  const knowledgeBase = [
+    {
+      id: 'R1',
+      name: 'Merit-cum-Means Scholarship',
+      amount: '₹25,000/year',
+      amountNum: 25000,
+      conditions: [
+        { field: 'income', op: '<', value: 200000, label: 'Income < ₹2,00,000' },
+        { field: 'marks', op: '>=', value: 85, label: 'Marks ≥ 85%' }
+      ],
+      result: 'Merit-cum-Means Scholarship',
+      userAdded: false
+    },
+    {
+      id: 'R2',
+      name: 'State Merit Scholarship',
+      amount: '₹18,000/year',
+      amountNum: 18000,
+      conditions: [
+        { field: 'marks', op: '>=', value: 90, label: 'Marks ≥ 90%' },
+        { field: 'attendance', op: '>=', value: 85, label: 'Attendance ≥ 85%' }
+      ],
+      result: 'State Merit Scholarship',
+      userAdded: false
+    },
+    {
+      id: 'R3',
+      name: 'SC/ST Government Scholarship',
+      amount: '₹30,000/year',
+      amountNum: 30000,
+      conditions: [
+        { field: 'category', op: '=', value: 'SC/ST', label: 'Category = SC/ST' },
+        { field: 'income', op: '<', value: 350000, label: 'Income < ₹3,50,000' }
+      ],
+      result: 'SC/ST Government Scholarship',
+      userAdded: false
+    },
+    {
+      id: 'R4',
+      name: 'Women Empowerment Scholarship',
+      amount: '₹15,000/year',
+      amountNum: 15000,
+      conditions: [
+        { field: 'gender', op: '=', value: 'Female', label: 'Gender = Female' },
+        { field: 'marks', op: '>=', value: 75, label: 'Marks ≥ 75%' }
+      ],
+      result: 'Women Empowerment Scholarship',
+      userAdded: false
+    },
+    {
+      id: 'R5',
+      name: 'BPL Financial Aid',
+      amount: '₹20,000/year',
+      amountNum: 20000,
+      conditions: [
+        { field: 'income', op: '<', value: 100000, label: 'Income < ₹1,00,000' }
+      ],
+      result: 'BPL Financial Aid',
+      userAdded: false
+    },
+    {
+      id: 'R6',
+      name: 'Sports Scholarship',
+      amount: '₹12,000/year',
+      amountNum: 12000,
+      conditions: [
+        { field: 'sports_achievement', op: '=', value: true, label: 'Sports Achievement = Yes' },
+        { field: 'marks', op: '>=', value: 60, label: 'Marks ≥ 60%' }
+      ],
+      result: 'Sports Scholarship',
+      userAdded: false
+    },
+    {
+      id: 'R7',
+      name: 'Differently-Abled Scholarship',
+      amount: '₹35,000/year',
+      amountNum: 35000,
+      conditions: [
+        { field: 'disability', op: '=', value: true, label: 'Disability = Yes' }
+      ],
+      result: 'Differently-Abled Scholarship',
+      userAdded: false
+    },
+    {
+      id: 'R8',
+      name: "Chancellor's Excellence Award",
+      amount: '₹50,000/year',
+      amountNum: 50000,
+      conditions: [
+        { field: 'marks', op: '>=', value: 95, label: 'Marks ≥ 95%' }
+      ],
+      result: "Chancellor's Excellence Award",
+      userAdded: false
+    },
+    {
+      id: 'R9',
+      name: 'First Generation Learner Grant',
+      amount: '₹22,000/year',
+      amountNum: 22000,
+      conditions: [
+        { field: 'first_graduate', op: '=', value: true, label: 'First Graduate = Yes' },
+        { field: 'income', op: '<', value: 250000, label: 'Income < ₹2,50,000' }
+      ],
+      result: 'First Generation Learner Grant',
+      userAdded: false
+    },
+    {
+      id: 'R10',
+      name: 'Not Eligible (High Income / Low Marks)',
+      amount: 'N/A',
+      amountNum: 0,
+      conditions: [
+        { field: 'income', op: '>=', value: 350000, label: 'Income ≥ ₹3,50,000' },
+        { field: 'marks', op: '<', value: 75, label: 'Marks < 75%' }
+      ],
+      result: null, // null means NOT eligible
+      isNegative: true,
+      userAdded: false
+    }
+  ];
+
+  // ═══════════════════════════════════
+  //  WORKING MEMORY
+  // ═══════════════════════════════════
+
+  let workingMemory = {};
+  let inferenceResults = [];
+
+  // ═══════════════════════════════════
+  //  DOM REFERENCES
+  // ═══════════════════════════════════
+
+  const form = document.getElementById('studentForm');
+  const traceContainer = document.getElementById('traceContainer');
+  const traceStats = document.getElementById('traceStats');
+  const resultsContainer = document.getElementById('resultsContainer');
+  const explanationContainer = document.getElementById('explanationContainer');
+  const wmPanel = document.getElementById('workingMemory');
+  const wmFacts = document.getElementById('wmFacts');
+  const ruleListContainer = document.getElementById('ruleListContainer');
+  const ruleCount = document.getElementById('ruleCount');
+  const addRuleBtn = document.getElementById('addRuleBtn');
+  const addRuleMsg = document.getElementById('addRuleMsg');
+
+  // ═══════════════════════════════════
+  //  RENDER KNOWLEDGE BASE
+  // ═══════════════════════════════════
+
+  function renderKnowledgeBase() {
+    ruleCount.textContent = knowledgeBase.length + ' rules';
+    ruleListContainer.innerHTML = '';
+    knowledgeBase.forEach((rule, idx) => {
+      const div = document.createElement('div');
+      div.className = 'kb-rule' + (rule.userAdded ? ' user-added' : '');
+
+      let condText = rule.conditions.map(c => {
+        return `<span class="kw">${formatFieldName(c.field)}</span> ${c.op} ${formatValue(c.value)}`;
+      }).join(' <span class="kw">AND</span> ');
+
+      let thenText = rule.result
+        ? `eligible for "<strong>${rule.result}</strong>"`
+        : `<span style="color:var(--accent-red)">NOT eligible</span> (${rule.name})`;
+
+      div.innerHTML = `
+        <span class="rule-num">${rule.id}</span>
+        <span class="rule-text"><span class="kw">IF</span> ${condText} <span class="kw">THEN</span> ${thenText}</span>
+        ${rule.userAdded ? `<button class="delete-rule" data-idx="${idx}" title="Remove rule">✕</button>` : ''}
+      `;
+      ruleListContainer.appendChild(div);
+    });
+
+    // Delete button listeners
+    ruleListContainer.querySelectorAll('.delete-rule').forEach(btn => {
+      btn.addEventListener('click', function() {
+        const idx = parseInt(this.dataset.idx);
+        knowledgeBase.splice(idx, 1);
+        renderKnowledgeBase();
+      });
+    });
+  }
+
+  function formatFieldName(field) {
+    const map = {
+      income: 'Income', marks: 'Marks', attendance: 'Attendance',
+      category: 'Category', gender: 'Gender', sports_achievement: 'Sports',
+      disability: 'Disability', first_graduate: 'First Graduate'
+    };
+    return map[field] || field;
+  }
+
+  function formatValue(val) {
+    if (val === true) return 'Yes';
+    if (val === false) return 'No';
+    if (typeof val === 'number' && val >= 1000) return '₹' + val.toLocaleString('en-IN');
+    return val;
+  }
+
+  // ═══════════════════════════════════
+  //  INFERENCE ENGINE — Forward Chaining
+  // ═══════════════════════════════════
+
+  function evaluateCondition(condition, facts) {
+    const fieldVal = facts[condition.field];
+    const targetVal = condition.value;
+
+    // Handle category SC/ST matching
+    if (condition.field === 'category' && condition.value === 'SC/ST') {
+      return condition.op === '='
+        ? (fieldVal === 'SC' || fieldVal === 'ST')
+        : (fieldVal !== 'SC' && fieldVal !== 'ST');
+    }
+
+    switch (condition.op) {
+      case '<': return fieldVal < targetVal;
+      case '<=': return fieldVal <= targetVal;
+      case '>': return fieldVal > targetVal;
+      case '>=': return fieldVal >= targetVal;
+      case '=': return fieldVal == targetVal; // loose equality for bool/string
+      default: return false;
+    }
+  }
+
+  function runInferenceEngine(facts) {
+    const results = [];
+
+    knowledgeBase.forEach(rule => {
+      const condResults = rule.conditions.map(cond => ({
+        ...cond,
+        passed: evaluateCondition(cond, facts),
+        actualValue: facts[cond.field]
+      }));
+
+      const allPassed = condResults.every(c => c.passed);
+
+      // Heuristic confidence scoring
+      let confidence = 0;
+      if (allPassed) {
+        const passedCount = condResults.length;
+        const baseConf = 75 + (passedCount * 5);
+        // Bonus for stronger matches
+        let bonus = 0;
+        condResults.forEach(c => {
+          if (c.field === 'marks' && typeof c.actualValue === 'number') {
+            bonus += Math.min(10, (c.actualValue - (c.value || 0)) * 0.5);
+          }
+          if (c.field === 'income' && c.op === '<' && typeof c.actualValue === 'number') {
+            const ratio = 1 - (c.actualValue / c.value);
+            bonus += Math.min(10, ratio * 20);
+          }
+        });
+        confidence = Math.min(99, Math.round(baseConf + bonus));
+      }
+
+      results.push({
+        rule,
+        condResults,
+        fired: allPassed,
+        confidence
+      });
+    });
+
+    return results;
+  }
+
+  // ═══════════════════════════════════
+  //  COLLECT FACTS INTO WORKING MEMORY
+  // ═══════════════════════════════════
+
+  function collectFacts() {
+    const facts = {
+      name: document.getElementById('studentName').value.trim(),
+      income: parseInt(document.getElementById('income').value) || 0,
+      marks: parseInt(document.getElementById('marks').value) || 0,
+      attendance: parseInt(document.getElementById('attendance').value) || 0,
+      category: document.getElementById('category').value,
+      gender: document.getElementById('gender').value,
+      sports_achievement: document.getElementById('sports').value === 'Yes',
+      disability: document.getElementById('disability').value === 'Yes',
+      first_graduate: document.getElementById('firstGrad').value === 'Yes'
+    };
+    return facts;
+  }
+
+  // ═══════════════════════════════════
+  //  DISPLAY WORKING MEMORY
+  // ═══════════════════════════════════
+
+  function displayWorkingMemory(facts) {
+    wmPanel.style.display = 'block';
+    wmFacts.innerHTML = '';
+    const entries = [
+      ['Name', facts.name],
+      ['Income', '₹' + facts.income.toLocaleString('en-IN')],
+      ['Marks', facts.marks + '%'],
+      ['Attendance', facts.attendance + '%'],
+      ['Category', facts.category],
+      ['Gender', facts.gender],
+      ['Sports', facts.sports_achievement ? 'Yes' : 'No'],
+      ['Disability', facts.disability ? 'Yes' : 'No'],
+      ['First Grad', facts.first_graduate ? 'Yes' : 'No']
+    ];
+    entries.forEach(([key, val]) => {
+      const div = document.createElement('div');
+      div.className = 'wm-fact';
+      div.innerHTML = `<strong>${key}:</strong> ${val}`;
+      wmFacts.appendChild(div);
+    });
+  }
+
+  // ═══════════════════════════════════
+  //  ANIMATED TRACE DISPLAY
+  // ═══════════════════════════════════
+
+  function displayTrace(results) {
+    traceContainer.innerHTML = '';
+    traceStats.style.display = 'flex';
+
+    const firedCount = results.filter(r => r.fired).length;
+    const totalCount = results.length;
+    traceStats.innerHTML = `
+      <div class="stat-chip"><span>📊 Total Rules:</span><span class="stat-value">${totalCount}</span></div>
+      <div class="stat-chip"><span>✅ Fired:</span><span class="stat-value">${firedCount}</span></div>
+      <div class="stat-chip"><span>❌ Not Fired:</span><span class="stat-value">${totalCount - firedCount}</span></div>
+      <div class="stat-chip"><span class="pulse"></span><span>Forward Chaining</span></div>
+    `;
+
+    results.forEach((res, idx) => {
+      const div = document.createElement('div');
+      div.className = `rule-trace ${res.fired ? 'fired' : 'not-fired'}`;
+
+      let condHTML = res.condResults.map(c => {
+        const icon = c.passed ? '✅' : '❌';
+        const iconClass = c.passed ? 'pass' : 'fail';
+        const actual = formatActualValue(c.field, c.actualValue);
+        return `<div class="condition-line">
+          <span class="cond-icon ${iconClass}">${icon}</span>
+          <span>${c.label} → <em style="color:var(--text-primary)">${actual}</em></span>
+        </div>`;
+      }).join('');
+
+      div.innerHTML = `
+        <div class="rule-trace-header">
+          <span class="rule-status ${res.fired ? 'fired' : 'not-fired'}">
+            ${res.fired ? '✅ FIRED' : '❌ NOT FIRED'}
+          </span>
+          <span class="rule-name">${res.rule.id}: ${res.rule.name}</span>
+        </div>
+        <div class="rule-conditions">${condHTML}</div>
+      `;
+
+      traceContainer.appendChild(div);
+
+      // Animate with delay
+      setTimeout(() => div.classList.add('visible'), 300 * (idx + 1));
+    });
+  }
+
+  function formatActualValue(field, val) {
+    if (field === 'income') return '₹' + val.toLocaleString('en-IN');
+    if (field === 'marks' || field === 'attendance') return val + '%';
+    if (val === true) return 'Yes';
+    if (val === false) return 'No';
+    return val;
+  }
+
+  // ═══════════════════════════════════
+  //  DISPLAY RESULTS
+  // ═══════════════════════════════════
+
+  function displayResults(results, facts) {
+    resultsContainer.innerHTML = '';
+    inferenceResults = results;
+
+    const eligible = results.filter(r => r.fired && r.rule.result !== null);
+    const negativeRule = results.find(r => r.fired && r.rule.isNegative);
+
+    if (eligible.length === 0) {
+      let reasonHTML = '';
+      if (negativeRule) {
+        reasonHTML = `<h3>⚠️ Not Eligible</h3>
+          <p><strong>Rule ${negativeRule.rule.id}</strong> fired: Your income is ≥ ₹3,50,000 and marks are below 75%. You do not meet the criteria for financial-need-based or merit scholarships.</p>`;
+      } else {
+        reasonHTML = `<h3>😔 No Scholarships Matched</h3>
+          <p>Unfortunately, the current set of ${knowledgeBase.length} rules did not match your profile. This may change as new rules are added.</p>`;
+      }
+      resultsContainer.innerHTML = `
+        <div class="no-scholarship">
+          ${reasonHTML}
+          <ul class="suggestion-list">
+            <li>Improve your marks to 85%+ for merit-based scholarships</li>
+            <li>Check if you qualify under sports or first-graduate categories</li>
+            <li>Your institution may have additional scholarships not in this system</li>
+            <li>Try adding new rules in the Knowledge Acquisition panel below</li>
+          </ul>
+        </div>`;
+      return;
+    }
+
+    // Sort by confidence descending
+    eligible.sort((a, b) => b.confidence - a.confidence);
+
+    eligible.forEach((res, idx) => {
+      const card = document.createElement('div');
+      card.className = 'scholarship-card';
+      card.style.animationDelay = `${idx * 0.15}s`;
+      card.dataset.ruleId = res.rule.id;
+
+      card.innerHTML = `
+        <div class="scholarship-name">🏅 ${res.rule.result}</div>
+        <div class="scholarship-details">
+          <div class="detail">💰 <strong>${res.rule.amount}</strong></div>
+          <div class="detail">📐 Confidence: <strong>${res.confidence}%</strong></div>
+          <div class="detail">📋 Rule: <strong>${res.rule.id}</strong></div>
+        </div>
+        <div class="confidence-bar">
+          <div class="confidence-fill" style="width:0%"></div>
+        </div>
+        <div class="click-hint">🔍 Click for MYCIN-style explanation →</div>
+      `;
+
+      // Animate confidence bar
+      setTimeout(() => {
+        card.querySelector('.confidence-fill').style.width = res.confidence + '%';
+      }, 500 + idx * 200);
+
+      card.addEventListener('click', () => showExplanation(res, facts));
+      resultsContainer.appendChild(card);
+    });
+  }
+
+  // ═══════════════════════════════════
+  //  EXPLANATION FACILITY (MYCIN-Style)
+  // ═══════════════════════════════════
+
+  function showExplanation(res, facts) {
+    explanationContainer.innerHTML = '';
+
+    const condChain = res.condResults.map(c => {
+      const actual = formatActualValue(c.field, c.actualValue);
+      return `  <span class="keyword">IF</span> ${c.label}
+    → Actual: <span class="value">${actual}</span> — <span class="value">${c.passed ? 'SATISFIED ✅' : 'FAILED ❌'}</span>`;
+    }).join('\n  <span class="keyword">AND</span>\n');
+
+    const box = document.createElement('div');
+    box.className = 'explanation-box';
+    box.innerHTML = `
+      <div class="explanation-title">💬 WHY was "${res.rule.result}" recommended?</div>
+      <div class="explanation-chain">
+<span class="keyword">RULE</span> ${res.rule.id}: ${res.rule.name}
+
+${condChain}
+
+  <span class="keyword">THEN</span> → Student <span class="value">"${facts.name}"</span> is eligible for
+          <span class="value">"${res.rule.result}"</span>
+
+<span class="keyword">CONFIDENCE</span>: <span class="value">${res.confidence}%</span> (Heuristic Score)
+      </div>
+      <div class="explanation-meta">
+        <strong>Explanation Method:</strong> MYCIN-style backward trace — the system explains
+        its conclusion by showing which conditions led to rule activation.<br>
+        <strong>Inference Type:</strong> Forward Chaining — facts were asserted first, then rules
+        were matched against the working memory in sequence.<br>
+        <strong>Meta-knowledge:</strong> This rule is one of ${knowledgeBase.length} rules in the knowledge base.
+        Confidence is computed heuristically based on how strongly conditions are satisfied
+        (e.g., marks exceeding threshold, income well below limit).
+      </div>
+    `;
+
+    explanationContainer.appendChild(box);
+    // Scroll to explanation
+    box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  // ═══════════════════════════════════
+  //  FORM SUBMISSION — MAIN PIPELINE
+  // ═══════════════════════════════════
+
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    // 1. Collect facts into Working Memory
+    workingMemory = collectFacts();
+
+    // 2. Display Working Memory
+    displayWorkingMemory(workingMemory);
+
+    // 3. Run Inference Engine (Forward Chaining)
+    const results = runInferenceEngine(workingMemory);
+
+    // 4. Display animated trace
+    displayTrace(results);
+
+    // 5. Display results after trace animation completes
+    setTimeout(() => {
+      displayResults(results, workingMemory);
+    }, 300 * (results.length + 1));
+
+    // 6. Clear explanation
+    explanationContainer.innerHTML = `
+      <div class="explanation-empty">
+        <div class="icon">💬</div>
+        <p>Click on any scholarship result above<br>to see its MYCIN-style "WHY" explanation.</p>
+      </div>`;
+  });
+
+  // ═══════════════════════════════════
+  //  KNOWLEDGE ACQUISITION — Add New Rules
+  // ═══════════════════════════════════
+
+  addRuleBtn.addEventListener('click', function() {
+    const field1 = document.getElementById('ka_field1').value;
+    const op1 = document.getElementById('ka_op1').value;
+    const val1Raw = document.getElementById('ka_val1').value.trim();
+    const field2 = document.getElementById('ka_field2').value;
+    const op2 = document.getElementById('ka_op2').value;
+    const val2Raw = document.getElementById('ka_val2').value.trim();
+    const scholarship = document.getElementById('ka_scholarship').value.trim();
+    const amountStr = document.getElementById('ka_amount').value.trim();
+
+    if (!val1Raw || !scholarship) {
+      showAddMsg('⚠️ Please fill Condition 1 value and scholarship name.', 'var(--accent-red)');
+      return;
+    }
+
+    const conditions = [];
+    conditions.push({
+      field: field1,
+      op: op1,
+      value: parseConditionValue(field1, val1Raw),
+      label: `${formatFieldName(field1)} ${op1} ${val1Raw}`
+    });
+
+    if (field2 && val2Raw) {
+      conditions.push({
+        field: field2,
+        op: op2,
+        value: parseConditionValue(field2, val2Raw),
+        label: `${formatFieldName(field2)} ${op2} ${val2Raw}`
+      });
+    }
+
+    const amount = parseInt(amountStr) || 10000;
+    const newRule = {
+      id: 'R' + (knowledgeBase.length + 1),
+      name: scholarship,
+      amount: '₹' + amount.toLocaleString('en-IN') + '/year',
+      amountNum: amount,
+      conditions,
+      result: scholarship,
+      userAdded: true
+    };
+
+    knowledgeBase.push(newRule);
+    renderKnowledgeBase();
+    showAddMsg('✅ Rule ' + newRule.id + ' added successfully!', 'var(--accent-green)');
+
+    // Clear KA form
+    document.getElementById('ka_val1').value = '';
+    document.getElementById('ka_val2').value = '';
+    document.getElementById('ka_scholarship').value = '';
+    document.getElementById('ka_amount').value = '';
+    document.getElementById('ka_field2').value = '';
+  });
+
+  function parseConditionValue(field, raw) {
+    const boolFields = ['sports_achievement', 'disability', 'first_graduate'];
+    const numFields = ['income', 'marks', 'attendance'];
+    if (boolFields.includes(field)) {
+      return raw.toLowerCase() === 'yes' || raw.toLowerCase() === 'true';
+    }
+    if (numFields.includes(field)) {
+      return parseInt(raw) || 0;
+    }
+    return raw;
+  }
+
+  function showAddMsg(text, color) {
+    addRuleMsg.textContent = text;
+    addRuleMsg.style.color = color;
+    addRuleMsg.style.opacity = '1';
+    setTimeout(() => { addRuleMsg.style.opacity = '0'; }, 3000);
+  }
+
+  // ═══════════════════════════════════
+  //  INITIALIZE
+  // ═══════════════════════════════════
+
+  renderKnowledgeBase();
+
+})();
+</script>
+</body>
+</html>
